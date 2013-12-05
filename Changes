@@ -1,5 +1,160 @@
 Revision history for Module-Cooker
 
+commit a7aa68cc838aa6233ec9617cef9987964d62f070
+Date:   Thu Dec 5 14:53:41 2013 -0700
+
+    Bumped version to 1.1.3 for first public release.
+
+commit d0d66544499e8e6ab3d54389e6050533452ccf5f
+Date:   Thu Dec 5 03:36:54 2013 -0700
+
+    Corrected POD for localdirs in Cooker.pm
+
+commit 2b73e4b9c4c243553fec25975064760233483b22
+Date:   Thu Dec 5 03:32:14 2013 -0700
+
+    Added minimal POD for object parameters, bumped version to 0.1_2.
+
+commit 0d9433a215b309b2ed00685336b3040d80620680
+Date:   Thu Dec 5 01:25:11 2013 -0700
+
+    Tweak to Makefile.PL for distro tarball.
+
+commit 5ef0682aa8cf98e195efd66b3854f9be4765cff1
+Date:   Thu Dec 5 01:19:42 2013 -0700
+
+    Fleshed out POD and removed debugging statements from bin/modcooker.
+
+commit ae7676a690a9de2fc67efb2f290961ad30094f70
+Date:   Thu Dec 5 00:33:46 2013 -0700
+
+    Added EXE_FILES to Makefile.PL
+
+commit df965c1866390d83e26e6988214035c9002c60de
+Date:   Thu Dec 5 00:23:18 2013 -0700
+
+    Updated list of prerequisites in Makefile.PL
+
+commit 334a55fb9c3cefdf34776424dc8b8b29948ed5cf
+Date:   Wed Dec 4 23:15:35 2013 -0700
+
+    Added link to bin/modcooker in the POD
+
+commit 290953c7a623042afaf9370e6d93fa5a960b80b4
+Date:   Wed Dec 4 22:50:46 2013 -0700
+
+    Removed minimum Perl requirements from the test suite.
+
+commit cabd207623f131bb8648dac25e254bd54c233106
+Date:   Wed Dec 4 22:48:08 2013 -0700
+
+    Removed minimum Perl version requirements and added "done_testing()"
+    where needed to xt/ tests.
+
+commit 5066d3c99183778d2b3611abf54a5bc8367ffa4a
+Date:   Wed Dec 4 20:59:14 2013 -0700
+
+    Removed 'use lib' statement that was present to make testing easier.
+
+commit 16b02defab46ff3a3c63302958b0e284d9964e5d
+Date:   Wed Dec 4 20:56:02 2013 -0700
+
+    Changed call from instance method basename_dir to class method _basename_dir
+    in modcooker.
+
+commit 5401f3695f6fcdd221c09f0d46ceaf0a3c804ecf
+Date:   Wed Dec 4 20:55:16 2013 -0700
+
+    Added GitHub info to Cooker.pm
+
+commit 1f04cd78b9f9a4da3cd182b4634b1dbde2676e02
+Date:   Wed Dec 4 20:41:22 2013 -0700
+
+    Implemented '--copy' option in modcooker.
+
+commit 18fe4ca614c002f4d3a81b1018d68149070d1bc8
+Date:   Wed Dec 4 17:53:39 2013 -0700
+
+    Added --available option to bin/modcooker to show available profiles and
+    whether or not they are from the standard distro, have been overriden, or
+    are strictly local.
+
+commit 33bd3ac918312d57d947096f582dbd82e40dcd7f
+Date:   Tue Dec 3 12:13:03 2013 -0700
+
+    Added support for Storable::dclone where needed to deter tampering by
+    outside code.
+
+commit 4efd3ec201c9b3a6fab89383bc81e3da11530378
+Date:   Tue Dec 3 12:12:35 2013 -0700
+
+    Added more read-only methods
+
+commit a34cfbb6a45aeb394b4d3cd86cbaa743469ba230
+Date:   Tue Dec 3 11:19:24 2013 -0700
+
+    Changed to use public method 'basename_dir' instead of private
+    method '_basename_dir'.
+
+commit e8bbece84bb87fcc260254cede11d37560c93de2
+Date:   Tue Dec 3 11:15:22 2013 -0700
+
+    Added basic modcooker.cfg template for modcooker.
+    
+    new file:   lib/Module/Cooker/modcooker.cfg
+
+commit 45b0662375947fb8d298f0d93fbf0bfd1ea94eef
+Date:   Tue Dec 3 11:13:33 2013 -0700
+
+    Added test support for read-only methods.
+
+commit acd906bb139c85876abc87948450e603c1b9af00
+Date:   Tue Dec 3 11:06:54 2013 -0700
+
+    Added entries for 'modcooker.cg' and 'MANIFEST.SKIP' to MANIFEST.
+
+commit 425c28a4bb25bddc2491e967857fc88df1546383
+Date:   Tue Dec 3 11:03:16 2013 -0700
+
+    Added method 'basename_dir' to provide a more consistent public API to an
+    internal value, changing _basename_dir to be strictly a private use
+    utility method.
+    
+    Added test for 'basename_dir' to test suite.
+
+commit 153007454f515a85111534cadbed8fd8890f22e4
+Date:   Tue Dec 3 10:25:45 2013 -0700
+
+    Added note about bug in AppConfig that prevents hash keys being specified
+    on the command line using Getopt::Long.
+
+commit 65422905e4cb2e96c4af41854bc0907eb3565929
+Date:   Tue Dec 3 00:48:41 2013 -0700
+
+    Added logic for --setup to modcooker script
+
+commit 447e232924a295a48d460bb7d5b024aa1b290585
+Date:   Mon Dec 2 18:10:20 2013 -0700
+
+    Added logic to bin/modcooker to allow the command line options for 'localdirs'
+    to override the values set in the local config file instead of just add
+    to them. This addresses a major problem (IMO) that is present in others.
+
+commit 887bdddd098066a84d53a1cc912cf1248d5f8cd9
+Date:   Mon Dec 2 16:18:30 2013 -0700
+
+    Initial commit for default MANIFEST.SKIP file
+
+commit 48568e0495cd2dd9b4eb8e3b8b913002dc7f0226
+Date:   Sun Dec 1 22:26:29 2013 -0700
+
+    First commit so the Monks can review (rip apart) as needed.
+
+commit f69914376764aa4ef1754d7d4c85cf8ddc7b2280
+Date:   Sun Dec 1 18:41:28 2013 -0700
+
+    initial commit to setup repo
+
 v0.1_1  2013-11-25 00:00:00
         First version, released on an unsuspecting world.
 

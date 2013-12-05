@@ -53,6 +53,6 @@
          }
       }
    },
-   "release_status" : "testing",
-   "version" : "v0.1_1"
+   "release_status" : "stable",
+   "version" : "v0.1.3"
 }

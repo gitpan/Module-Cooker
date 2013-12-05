@@ -1,6 +1,6 @@
 package Module::Cooker;
 
-our $VERSION = 'v0.1_1';
+our $VERSION = 'v0.1.3';
 
 #use 5.008_008;
 
@@ -492,7 +492,7 @@ Module::Cooker - Module starter kit based on Template
 
 =head1 VERSION
 
-Version 0.01
+Version 0.01.3
 
 =head1 SYNOPSIS
 
@@ -530,23 +530,49 @@ Here are the default vaues for the attributes:
 
 =over 4
 
+=item package
+
+A string representing the name of the package/module. I.e. My::New::Module
+
 =item minperl
+
+A string representing the minimum version of Perl require to use the module.
+I.e. 'v5.8.8' or '5.8.8' or even '5.008008'.  Default: '' (empty string)
 
 =item author
 
+A string with the author's name. Default: '' (empty string);
+
 =item email
+
+A string with the author's email. Default: '' (empty string);
 
 =item profile
 
-=item package
+The profile from which the module should be built from. Default: 'default'
 
 =item version
 
+A string representing the version of the new module. Default: 'v0.1_1'
+
 =item extravars
+
+This option creates a hash ref that is eventually passed as part of the
+data structure that L<Template> will use as substitution variables.
+Any element in the hash ref can be accessed as C<extra.element_name> in
+a template file.
 
 =item localdirs
 
+The directory (or directories if specified multiple times) to search in
+addition to the standard distrubution profile directory for the profile named
+by the '--profile' parameter. This is built as an array ref. Default: []
+
 =item nosubs
+
+Boolean flag indicating that subdirectories in the profile should NOT be
+searched for template files. (Will probably be removed in the next
+release.) Default: 0
 
 =back
 
@@ -561,6 +587,17 @@ by using the L</summary> method described below.
 =head1 METHODS
 
 =head2 cook
+
+This is the method that does the real work of the module. Based upon the
+parameters used to construct the object, it will search the profile
+directory(ies) for the specified profile. It will then build a list of
+files in the profile to be processed by L<Template>.
+
+The processed files will be placed under a distribution directory created
+in the current directly. A MANIFEST will be built at the completion of this
+processing.
+
+An exception will be thrown if the distribution directory already exists.
 
 =head2 dist_name
 
