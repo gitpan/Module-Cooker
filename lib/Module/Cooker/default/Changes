@@ -1,0 +1,4 @@
+Revision history for Perl module [% package.name %]
+
+[% package.version %] [% package.timestamp %]
+    - original version; created by Module::Cooker [% modcooker.version %]

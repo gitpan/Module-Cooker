@@ -1,0 +1,5 @@
+Revision history for [% package.dist_name %]
+
+[% package.version %]    [% package.timestamp %]
+        First version, released on an unsuspecting world.
+

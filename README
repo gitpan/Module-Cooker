@@ -1,0 +1,43 @@
+Module::Cooker
+
+Like most of you reading this, I have used various tools such as h2xs,
+Module::Starter, Module::Maker (and have examined Distribution::Cooker)
+to create skeleton distributions.
+
+And like most of you (I presume) I have found each to be lacking in some area.
+
+Hence, Module::Cooker. It draws upon what I consider to be the best of the
+aforementioned tools and adds a bit of my own. Specifically, I have strived
+to make it as easy as possible to create custom skeleton templates that
+meet the needs of different types of modules.
+
+This module would have been much more difficult to design without the work
+that has been done by many others on the aforementioned modules.
+
+INSTALLATION
+
+To install this module, run the following commands:
+
+	perl Makefile.PL
+	make
+	make test
+	make install
+
+If you are on a windows box you should use 'nmake' rather than 'make'.
+
+KNOWN BUGS
+
+A bug in AppConfig (https://rt.cpan.org/Public/Bug/Display.html?id=32954)
+prevents setting values for 'extravars' from the command line of modcooker.
+That said, they can be set the the config file without a problem.
+
+LICENSE AND COPYRIGHT
+
+Copyright (C) 2013 Jim Bacon
+
+This program is free software; you can redistribute it and/or modify it
+under the terms of either: the GNU General Public License as published
+by the Free Software Foundation; or the Artistic License.
+
+See L<http://dev.perl.org/licenses/> for more information.
+

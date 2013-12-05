@@ -1,0 +1,508 @@
+#!/usr/local/bin/perl
+
+use strict;
+use warnings FATAL => 'all';
+
+use Cwd ();
+use Getopt::Long;
+use Try::Tiny;
+use Data::Dumper;
+
+use AppConfig (qw( :expand :argcount ));
+
+use File::Spec::Functions (qw( catdir catfile ));
+use File::HomeDir ();
+use File::Path qw( make_path );
+use File::Copy;
+
+use Pod::Usage;
+
+use Module::Cooker;
+
+my $VERSION = '0.1_1';
+
+my $homedir;
+my $mc_dir = try {
+    return unless $homedir = File::HomeDir->my_home;
+
+    my $path = catfile( $homedir, 'modcook' );
+    return -d $path ? $path : undef;
+}
+catch {
+    warn "NOTICE: Can not get user's home directory: $_\n";
+    return;
+};
+warn "NOTICE: ~/modcook directory does not exist\n" unless $mc_dir;
+
+# anything not in this hash is meant to be a modcooker param as opposed
+# to being a param passed to the M::C constructor.
+my %mc_params = (
+    minperl   => undef,
+    version   => undef,
+    author    => undef,
+    email     => undef,
+    profile   => undef,
+    nosubs    => undef,
+    localdirs => undef,
+    extravars => undef,
+);
+
+my $cfg = AppConfig->new(
+    { ERROR => \&_cfg_error },
+    qw(
+      minperl=s
+      version=s
+      author=s
+      email=s
+      profile=s
+      nosubs
+      extravars=s% )
+);
+
+# this has to be defined here because of the EXPAND arg to it
+$cfg->define( 'localdirs=s@' => { EXPAND => EXPAND_UID } );
+
+# read a local config file if it exists
+if ($mc_dir) {
+    my $cfg_fname = catfile( $mc_dir, 'modcooker.cfg' );
+    try {
+        $cfg->file($cfg_fname);
+    }
+    catch {
+        warn "Config file fatal error: $_\n";
+        pod2usage(2);
+    }
+    if -f $cfg_fname;
+}
+
+# get this now before checking the command line
+my @initial_dirs = @{ $cfg->localdirs };
+
+# it makes no sense to have these defined other than as command line options.
+# they will throw an exception if found in the config file.
+$cfg->define( 'setup'     => { ARGCOUNT => ARGCOUNT_NONE } );
+$cfg->define( 'available' => { ARGCOUNT => ARGCOUNT_NONE } );
+$cfg->define( 'copy'      => { ARGS     => '=s', ARGCOUNT => ARGCOUNT_ONE } );
+
+# add in anything from the command line
+# NOTE: hashref args (i.e. extravars) do NOT work due to a bug in AppConfig
+try {
+    $cfg->getopt();
+}
+catch {
+    warn "Command line fatal error: $_\n";
+    pod2usage(2);
+};
+
+my %cfgopts = $cfg->varlist("^.+");
+
+# check for mutually exclusive options
+my @exclusives;
+for (qw( available copy setup )) {
+    push( @exclusives, "--$_" ) if $cfgopts{$_};
+}
+if ( @exclusives > 1 ) {
+    my $exclusives_str = join( ', ', @exclusives );
+    warn "Mutually exclusive options found: $exclusives_str\n\n";
+    pod2usage(2);
+}
+
+# this addresses a major drawback with other config files namely, they
+# don't usually provide a way to override an array
+if ( grep( /^replace$/, @{ $cfgopts{localdirs} } ) ) {
+    shift( @{ $cfgopts{localdirs} } ) for ( 1 .. @initial_dirs );
+    my @tmp = grep !/^replace$/, @{ $cfgopts{localdirs} };
+    $cfgopts{localdirs} = \@tmp;
+}
+
+# if 'setup' is true then all we want to do is copy the sample config file
+# to '~/modcook' and then exit. Should we also copy the default profile to
+# '~/modcook/custom' as a starting point?
+if ( $cfgopts{setup} ) {
+    pod2usage if @ARGV;
+
+    die "Must have a user's homedir to do a setup" unless $homedir;
+
+    my $cfg_fname = catfile( $homedir, 'modcook', 'modcooker.cfg' );
+    die "$cfg_fname already exists" if -f $cfg_fname;
+
+    # we need to create '~/modcook' if it doesn't exist
+    try {
+        $mc_dir = catdir( $homedir, 'modcook' );
+        make_path($mc_dir) or die $!;
+    }
+    catch {
+        die "Can't make dir $mc_dir: $_";
+    }
+    unless $mc_dir;
+
+    my $std_cfg = catfile( Module::Cooker->_basename_dir, 'modcooker.cfg' );
+    copy( $std_cfg, $cfg_fname ) or die "Can't create $cfg_fname: $!";
+
+    print "$cfg_fname has been created, please edit it as needed.\n";
+
+    exit;
+} elsif ( $cfgopts{available} ) {
+    pod2usage if @ARGV;
+
+    print "Searching for Available Profiles\n\n";
+
+    my @localdirs = @{ $cfgopts{localdirs} };
+
+    my $profiles = {};
+
+    print "Search Order:\n";
+    for (@localdirs) {
+        my $dir = Cwd::realpath($_);
+        print "  $dir\n";
+        _get_profiles( Cwd::realpath($_), 'local', $profiles );
+    }
+    my $dir = Cwd::realpath( Module::Cooker->_basename_dir );
+    print "  $dir\n";
+    _get_profiles( $dir, 'standard', $profiles );
+    print "\n";
+
+    my $maxlen = length('Profile');
+    for ( keys( %{$profiles} ) ) {
+        $maxlen = length($_) if length($_) > $maxlen;
+    }
+    my $pat1 = "\%-${maxlen}s   - \%s";
+    my $pat2 = "  \%-${maxlen}s - \%s";
+
+    printf( "$pat1\n", 'Profile', 'Type' );
+    for ( keys( %{$profiles} ) ) {
+        printf( "$pat2\n", $_, $profiles->{$_} );
+    }
+
+    exit;
+} elsif ( $cfgopts{copy} ) {
+    pod2usage if @ARGV;
+
+    # does the standard profile exist?
+    my $profiles = {};
+    _get_profiles( Module::Cooker->_basename_dir, 'standard', $profiles );
+    die "No such standard profile: $cfgopts{copy}"
+      unless $profiles->{ $cfgopts{copy} };
+
+    # place the copy in ~/modcook for now, do not overwrite existing files
+    # if present, just add to them.
+
+    # we need to create '~/modcook' if it doesn't exist
+    try {
+        $mc_dir = catdir( $homedir, 'modcook' );
+        make_path($mc_dir) or die $!;
+    }
+    catch {
+        die "Can't make dir $mc_dir: $_";
+    }
+    unless $mc_dir;
+
+    # and create the target profile dir as well, if need be
+    my $dest_dir = catdir( $mc_dir, $cfgopts{copy} );
+    try {
+        make_path($dest_dir) or die $!;
+    }
+    catch {
+        die "Can't make $dest_dir: $_";
+    }
+    unless -d $dest_dir;
+
+    # now we just copy the source tree, let M::C do the hard work of
+    # finding the files themselves
+    my $mc = Module::Cooker->new( profile => $cfgopts{copy} );
+
+    # there should be only a single profile dir since localdirs was empty
+    my $src_dir = Cwd::realpath( pop( @{ $mc->profile_dirs } ) );
+    $mc->_gather_profile( abs_path => $src_dir, subdir_path => undef );
+
+    # create any missing dirs so File::Copy won't complain
+    for ( @{ $mc->{_template_dirs} } ) {
+        my $dest_subdir = catdir( $dest_dir, $_ );
+        try {
+            warn "creating subdir: $dest_subdir\n";
+            make_path($dest_subdir) or die $!;
+        }
+        catch {
+            die "Can not create $dest_subdir: $_";
+        }
+        unless -d $dest_subdir;
+    }
+
+    for my $template ( keys( %{ $mc->{_templates} } ) ) {
+        my $src_path  = catfile( $src_dir,  $template );
+        my $dest_path = catfile( $dest_dir, $template );
+
+        if ( -e $dest_path ) {
+            warn "Skipping template in $dest_dir: $template\n";
+            next;
+        }
+        warn "Copying $template to $dest_path\n";
+        copy( $src_path, $dest_path ) or die "Can't copy $template: $!";
+    }
+
+    exit;
+}
+
+pod2usage(2) unless @ARGV == 1;
+
+for ( keys(%mc_params) ) {
+    ( delete( $mc_params{$_} ), next )
+      unless defined( $cfgopts{$_} );
+    $mc_params{$_} = delete( $cfgopts{$_} );
+}
+$mc_params{package} = $ARGV[0];
+
+my $mc = Module::Cooker->new(%mc_params);
+
+$mc->cook();
+
+exit;
+
+sub _cfg_error {
+    if ( @_ > 1 ) {
+        my $pattern = shift;
+        die sprintf( "$pattern\n", @_ );
+    } else {
+        die "$_[0]\n";
+    }
+}
+
+sub _get_profiles {
+    my ( $dir, $type, $found ) = @_;
+
+    opendir( my $dh, $dir ) or die "can't opendir $dir: $!";
+    my @files = readdir($dh);
+    closedir $dh;
+
+    for my $fname (@files) {
+        next if $fname =~ m{^\.{1,2}\z};
+
+        my $fpath = File::Spec->catfile( $dir, $fname );
+        next unless -d $fpath;
+
+        $found->{$fname} = $found->{$fname} ? 'overridden' : $type;
+    }
+
+    return;
+}
+
+__END__
+
+=head1 NAME
+
+modcooker - Create skeleton module packages from templates
+
+=head1 SYNOPSIS
+
+Create a skeleton module named "My::New::Module" in the current directory:
+Note: the module name must conform to the following regex pattern:
+C</[A-Z_a-z][0-9A-Z_a-z]*(?:::[0-9A-Z_a-z]+)*/>
+
+  
+ $ modcooker [module parameters] My::New::Module
+  
+Create a basic L<configuration file|/CONFIGURATUIN FILE> (ready for editing)
+in C<$HOME/modcook>:
+  
+ $ modcooker --setup
+  
+List all available templates, both standard and local:
+  
+ $ modcooker [--localdirs local1 [--localdirs local2]] --available
+  
+ (list of available profiles)
+  
+Place a standard template profile directory in C<$HOME/modcook>:
+  
+ $ modcooker --copy default
+  
+=head1 OPTIONS
+
+The following are options that can be specified on the command line.
+
+NOTE! They are mutually exclusive and will throw an exception if used
+in a L<configuration file|/CONFIGURATION FILE>.
+
+=head2 --setup
+
+Creates a basic L<configurtion file|/CONFIGURATION FILE> in C<$HOME/modcook>.
+C<modcook> will be created if it does not already exist.
+
+Any error is fatal and an appropriate message will be printed.
+
+=head2 --available
+
+Lists all available profiles. The C<localdirs> parameter will be included in
+the search path if specified in either the
+L<configuration file|/CONFIGURATION FILE> or on the command line.
+
+Any standard profile that has been overridden in a local profile directory
+will be noted as such in the output. The output will be similar to below
+(assuming "localdirs ~/modcook" was specified in the configuration file):
+  
+ $ modcooker --available    
+ Searching for Available Profiles
+   
+ Search Order:
+   /home1/nortxcom/modcook
+   /home1/nortxcom/projects/Module-Cooker/lib/Module/Cooker
+  
+ Profile      - Type
+   h2xs       - standard
+   modmaker   - standard
+   myprofile  - local
+   default    - overridden
+   modstarter - standard
+
+=head2 --copy
+
+=head1 Module::Cooker PARAMETERS
+ 
+The following paramters can be specified on the command line when creating
+a new package or be placed in a L<configuration file|/CONFIGURATION FILE>
+(without the '--').
+
+=over 4
+
+=item --minperl
+
+A string representing the minimum version of Perl require to use the module.
+Default: '' (empty string)
+
+=item --version
+
+A string representing the version of the new module. Default: 'v0.1_1'
+
+=item --author
+
+A string with the author's name. Default: '' (empty string);
+
+=item --email
+
+A string with the author's email. Default: '' (empty string);
+
+=item --profile
+
+The profile from which the module should be built from. Default: 'default'
+
+=item --nosubs
+
+Boolean flag indicating that subdirectories in the profile should NOT be searched for template files. (Will probably be removed in the next release.) Default: 0
+
+=item --localdirs
+
+The directory (or directories if specified multiple times) to search in
+addition to the standard distrubution profile directory for the profile named
+by the '--profile' parameter. This is built as an array ref. Default: []
+
+=item --extravars
+
+This option creates a hash ref that is eventually passed as part of the
+data structure that L<Template> will use as substitution variables.
+Any element in the hash ref can be accessed as C<extra.element_name> in
+a template file.
+
+NOTE! Due to a bug in AppConfig (see L</KNOWN BUGS>) this can NOT be used on
+the command line at this time, but only in the config file.
+
+=back
+
+=head1 CONFIGURATION FILE
+
+The L<copy|/--copy> option will create a file named C<$HOME/modcook/modcooker.cg> with the following contents:
+
+  
+ # NOTE! This configuration file is used by the modcooker script and NOT
+ # by the module (Module::Cooker) itself.
+  
+ # These string variables are most likely the ones you will want to
+ # uncomment and set. Quotes are not needed, everything following the
+ # '=' character up to a newline or '#' will be read in.
+  
+ #author = A. Uthor
+ #email  = author@example.com
+  
+ # this parameter specifies what profile to use by default.
+  
+ #profile = default
+  
+ # this parameter controls what directories should be searched for profiles.
+ # it can be listed multiple times to specify more than one.
+ #
+ # NOTE: any values listed on the command line for modcooker will ADD to
+ # the list unless you specify the keyword 'replace' as one of the values.
+ # If you do that, then any values for localdirs in this file will be ignored.
+  
+ localdirs ~/modcook
+  
+ # this parameter is a hash reference that will be passed to Template as
+ # additional variables to be used for substitution.
+ #
+ # NOTE! Due to a bug in AppConfig you can not specify values for this
+ # parameter on the command line! See the following for details:
+ #
+ # https://rt.cpan.org/Public/Bug/Display.html?id=32954
+  
+ #extravars extra1 = foo
+ #extravars extra2 = bar
+  
+ # The following are simple Boolean flags.
+  
+ #nosubs = 0
+  
+Any of the L<Module::Cooker|/Module::Cooker PARAMETERS> may be place in the
+configuration file.
+
+=head1 LOCAL PROFILES
+
+One can create custom profiles, and override the standard profiles, simply by
+creating a directory with the appropriate name and then letting C<modcooker>
+(and by extension, C<Module::Cooker>) know what the parent directory is.
+
+The common use-case is to create custom profiles in C<$HOME/modcook>. The
+L<copy|/--copy> option will automatically create this directory for you if
+it does not exist.
+
+If you are overriding a standard profile, any of the standard files that are
+NOT in the local profile will be used. This means that you do not need to
+re-create a full standard profile, but only those files that you wish to be
+different or to add to a standard profile.
+
+If you create a custom profile that does not have a name that coincindes with
+one of the standard profiles then obviously only the files in that profile
+directory will be processed.
+
+Profile templates are processed with C<Template>. You can see a full list of
+of the available substitution parameters in the POD for
+L<Module::Cooker/template_data>. Plus, you can specify addtional items by
+means of the C<extravars> parameter.
+
+=head1 KNOWN BUGS
+
+Due to L<this bug|https://rt.cpan.org/Public/Bug/Display.html?id=32954> in
+L<AppConfig> it is not possible to update values for C<extravars> from the
+command line. It has no effect upon setting them in a local config file,
+however.
+
+=head1 AUTHOR
+
+Jim Bacon, C<< <jim at nortx.com> >>
+
+=head1 SEE ALSO
+
+L<Module::Cooker>,
+L<AppConfig>,
+L<Jose's Guide for Creating Perl modules|http://www.perlmonks.org/?node_id=431702>
+
+=head1 LICENSE AND COPYRIGHT
+
+Copyright 2013 Jim Bacon.
+
+This program is free software; you can redistribute it and/or modify it
+under the terms of either: the GNU General Public License as published
+by the Free Software Foundation; or the Artistic License.
+
+See L<http://dev.perl.org/licenses/> for more information.
+
+=cut
+

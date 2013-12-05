@@ -1,0 +1,58 @@
+{
+   "abstract" : "Module starter kit based on Template",
+   "author" : [
+      "Jim Bacon <jim@nortx.com>"
+   ],
+   "dynamic_config" : 1,
+   "generated_by" : "ExtUtils::MakeMaker version 6.72, CPAN::Meta::Converter version 2.132140",
+   "license" : [
+      "perl_5"
+   ],
+   "meta-spec" : {
+      "url" : "http://search.cpan.org/perldoc?CPAN::Meta::Spec",
+      "version" : "2"
+   },
+   "name" : "Module-Cooker",
+   "no_index" : {
+      "directory" : [
+         "t",
+         "inc"
+      ]
+   },
+   "prereqs" : {
+      "build" : {
+         "requires" : {
+            "Test::More" : "0"
+         }
+      },
+      "configure" : {
+         "requires" : {
+            "ExtUtils::MakeMaker" : "6.59"
+         }
+      },
+      "runtime" : {
+         "requires" : {
+            "AppConfig" : "0",
+            "Carp" : "0",
+            "Cwd" : "0",
+            "Data::Dumper" : "0",
+            "ExtUtils::Manifest" : "0",
+            "File::Copy" : "0",
+            "File::HomeDir" : "0",
+            "File::Path" : "0",
+            "File::Spec::Functions" : "0",
+            "File::Temp" : "0",
+            "File::Which" : "0",
+            "Getopt::Long" : "0",
+            "POSIX" : "0",
+            "Pod::Usage" : "0",
+            "Storable" : "0",
+            "Template" : "0",
+            "Try::Tiny" : "0",
+            "version" : "0.77"
+         }
+      }
+   },
+   "release_status" : "testing",
+   "version" : "v0.1_1"
+}

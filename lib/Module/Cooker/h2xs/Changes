@@ -1,0 +1,6 @@
+Revision history for Perl extension [% package.name %].
+
+[% package.version %]  [% package.timestamp %]
+	- original version; created by h2xs 1.23 with options
+		-XAn [% package.name %]
+
