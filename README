@@ -1,7 +1,7 @@
 Module::Cooker
 
 Like most of you reading this, I have used various tools such as h2xs,
-Module::Starter, Module::Maker (and have examined Distribution::Cooker)
+Module::Starter, ExtUtils::ModuleMaker (and have examined Distribution::Cooker)
 to create skeleton distributions.
 
 And like most of you (I presume) I have found each to be lacking in some area.
