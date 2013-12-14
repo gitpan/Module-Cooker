@@ -1,6 +1,6 @@
 package Module::Cooker;
 
-our $VERSION = 'v0.1.4';
+our $VERSION = 'v0.1_5';
 
 #use 5.008_008;
 
@@ -18,7 +18,7 @@ use version 0.77;
 use ExtUtils::Manifest qw( mkmanifest );
 use Storable (qw( dclone ));
 
-use File::Path qw( make_path );
+use File::Path 2.07 qw( make_path );
 use File::Spec::Functions qw( catdir catfile );
 use File::Which;
 
@@ -216,15 +216,6 @@ sub _author_info {
     return $author;
 }
 
-# builds path to where standard templates for a given profile are located
-sub _profile_dir {
-    my $self = shift;
-
-    my $dir = catdir( $self->basename_dir, $self->{profile} );
-
-    -d $dir ? return $dir : return;
-}
-
 sub _include_path {
     my $self = shift;
 
@@ -291,7 +282,7 @@ sub _gather_profile {
     my @files = readdir($dh);
     closedir $dh;
 
-    my $std_dir = $self->_profile_dir;
+    my $std_dir = $self->std_profiles_dir;
     my $src_type = ( $dir =~ /^(?:\Q$std_dir\E)/ ) ? 'standard' : 'local';
 
     for my $fname (@files) {
@@ -377,7 +368,7 @@ sub profile_dirs {
     croak "Can't set read-only method: profile_dirs" if @_;
 
     my @searchdirs = $self->localdirs;
-    push( @searchdirs, $self->basename_dir );
+    push( @searchdirs, catdir( $self->std_profiles_dir ) );
 
     my @profile_dirs;
     for (@searchdirs) {
@@ -394,6 +385,16 @@ sub basename_dir {
     croak "Can't set read-only method: basename_dir" if @_;
 
     return $self->{_basename_dir};
+}
+
+# builds path to where standard templates located
+sub std_profiles_dir {
+    my $self = shift;
+
+#    my $dir = catdir( $self->basename_dir, 'profiles', $self->{profile} );
+    my $dir = catdir( $self->basename_dir, 'profiles' );
+
+    -d $dir ? return $dir : return;
 }
 
 # builds list of final attribute values
@@ -673,6 +674,11 @@ Read-only method that returns the absolute path to where the module is
 located in the C<@INC> search path with the name of this module
 (C<Cooker>) appended. This is used to located the module's standard
 template directories.
+
+=head2 std_profiles_dir
+
+Read-only method that returns the absolute path to where the standard
+profiles are located in the distribution.
 
 =head2 summary
 

@@ -18,15 +18,15 @@ no_index:
     - t
     - inc
 requires:
-  AppConfig: 0
+  AppConfig: 1.66
   Carp: 0
   Cwd: 0
   Data::Dumper: 0
   ExtUtils::Manifest: 0
   File::Copy: 0
   File::HomeDir: 0
-  File::Path: 0
-  File::Spec::Functions: 0
+  File::Path: 2.07
+  File::Spec: 0
   File::Temp: 0
   File::Which: 0
   Getopt::Long: 0
@@ -36,4 +36,4 @@ requires:
   Template: 0
   Try::Tiny: 0
   version: 0.77
-version: v0.1.4
+version: v0.1_5

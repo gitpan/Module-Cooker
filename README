@@ -23,7 +23,8 @@ To install this module, run the following commands:
 	make test
 	make install
 
-If you are on a windows box you should use 'nmake' rather than 'make'.
+If you are on a Windows box, you can execute 'perl -V:make' to discover which
+version of "make" you should use. (Thx, Corion!)
 
 KNOWN BUGS
 

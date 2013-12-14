@@ -8,18 +8,18 @@ use Getopt::Long;
 use Try::Tiny;
 use Data::Dumper;
 
-use AppConfig (qw( :expand :argcount ));
+use AppConfig 1.66 (qw( :expand :argcount ));
 
 use File::Spec::Functions (qw( catdir catfile ));
 use File::HomeDir ();
-use File::Path qw( make_path );
+use File::Path 2.07 qw( make_path );
 use File::Copy;
 
 use Pod::Usage;
 
 use Module::Cooker;
 
-my $VERSION = '0.1.4';
+my $VERSION = '0.1_4';
 
 my $homedir;
 my $mc_dir = try {
@@ -136,7 +136,9 @@ if ( $cfgopts{setup} ) {
     }
     unless $mc_dir;
 
-    my $std_cfg = catfile( Module::Cooker->_basename_dir, 'modcooker.cfg' );
+    my $mc = Module::Cooker->new();
+#    my $std_cfg = catfile( Module::Cooker->_basename_dir, 'modcooker.cfg' );
+    my $std_cfg = catfile( $mc->basename_dir, 'modcooker.cfg' );
     copy( $std_cfg, $cfg_fname ) or die "Can't create $cfg_fname: $!";
 
     print "$cfg_fname has been created, please edit it as needed.\n";
@@ -157,7 +159,10 @@ if ( $cfgopts{setup} ) {
         print "  $dir\n";
         _get_profiles( Cwd::realpath($_), 'local', $profiles );
     }
-    my $dir = Cwd::realpath( Module::Cooker->_basename_dir );
+#    my $dir = Cwd::realpath( Module::Cooker->_basename_dir );
+    # get a default object simple so we have the "dir" methods
+    my $mc  = Module::Cooker->new();
+    my $dir = $mc->std_profiles_dir;
     print "  $dir\n";
     _get_profiles( $dir, 'standard', $profiles );
     print "\n";
@@ -180,7 +185,9 @@ if ( $cfgopts{setup} ) {
 
     # does the standard profile exist?
     my $profiles = {};
-    _get_profiles( Module::Cooker->_basename_dir, 'standard', $profiles );
+#    _get_profiles( Module::Cooker->_basename_dir, 'standard', $profiles );
+    my $mc = Module::Cooker->new( profile => $cfgopts{copy} );
+    _get_profiles( $mc->std_profiles_dir, 'standard', $profiles );
     die "No such standard profile: $cfgopts{copy}"
       unless $profiles->{ $cfgopts{copy} };
 
@@ -209,7 +216,7 @@ if ( $cfgopts{setup} ) {
 
     # now we just copy the source tree, let M::C do the hard work of
     # finding the files themselves
-    my $mc = Module::Cooker->new( profile => $cfgopts{copy} );
+#    my $mc = Module::Cooker->new( profile => $cfgopts{copy} );
 
     # there should be only a single profile dir since localdirs was empty
     my $src_dir = Cwd::realpath( pop( @{ $mc->profile_dirs } ) );
