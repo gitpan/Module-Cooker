@@ -1,6 +1,6 @@
 package Module::Cooker;
 
-our $VERSION = 'v0.1_5';
+our $VERSION = 'v0.1_6';
 
 #use 5.008_008;
 

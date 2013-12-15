@@ -17,6 +17,8 @@ no_index:
   directory:
     - t
     - inc
+    - xt
+    - lib/Module/Cooker/profiles
 requires:
   AppConfig: 1.66
   Carp: 0
@@ -36,4 +38,4 @@ requires:
   Template: 0
   Try::Tiny: 0
   version: 0.77
-version: v0.1_5
+version: v0.1_6

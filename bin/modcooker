@@ -19,7 +19,7 @@ use Pod::Usage;
 
 use Module::Cooker;
 
-my $VERSION = '0.1_4';
+my $VERSION = '0.1_6';
 
 my $homedir;
 my $mc_dir = try {

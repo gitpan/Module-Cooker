@@ -16,7 +16,9 @@
    "no_index" : {
       "directory" : [
          "t",
-         "inc"
+         "inc",
+         "xt",
+         "lib/Module/Cooker/profiles"
       ]
    },
    "prereqs" : {
@@ -54,5 +56,5 @@
       }
    },
    "release_status" : "testing",
-   "version" : "v0.1_5"
+   "version" : "v0.1_6"
 }
